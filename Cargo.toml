@@ -16,6 +16,12 @@ ndarray = { version = "0.13.1", default-features = false }
 nshare = { version = "0.1.1", features = ["ndarray", "image"] }
 minifb = "0.16"
 imageproc = "0.20"
+threadpool = { version = "1.8", optional = true }
 
 [dev-dependencies]
 csv = "1.1"
+
+[features]
+default = []
+
+parallel = ["threadpool"]

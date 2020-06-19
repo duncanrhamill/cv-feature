@@ -1,46 +1,46 @@
-//! # ORB Feature Detector
+//! # AKAZE feature detector implementation
+//!
+//! This module simpl implements the `FeatureDetector` trait for the already implemented `Akaze`
+//! struct from `cv::feature::akaze`.
 
 // -----------------------------------------------------------------------------------------------
 // IMPORTS
 // -----------------------------------------------------------------------------------------------
 
-use cv::{BitArray, ImagePoint};
-use nalgebra::Point2;
-use image::DynamicImage;
 use crate::FeatureDetector;
+use image::DynamicImage;
+use nalgebra::Point2;
+use cv::feature::akaze::{Akaze, KeyPoint};
+use cv::{BitArray, ImagePoint};
 
 // -----------------------------------------------------------------------------------------------
 // DATA STRUCTURES
 // -----------------------------------------------------------------------------------------------
 
-pub struct Orb {
-
-}
-
 pub struct Feature {
-    point: Point2<f64>
+    keypoint: KeyPoint,
+    descriptor: BitArray<64>
 }
 
 // -----------------------------------------------------------------------------------------------
 // IMPLEMENTATIONS
 // -----------------------------------------------------------------------------------------------
 
-impl Orb {
-    pub fn new() -> Self {
-        Orb {}
-    }
-}
-
-impl FeatureDetector for Orb {
+impl FeatureDetector for Akaze {
     type Feature = Feature;
 
-    fn extract(&self, _img: &DynamicImage) -> Vec<Self::Feature> {
-        unimplemented!();
+    fn extract(&self, img: &DynamicImage) -> Vec<Self::Feature> {
+        let (kps, descs) = self.extract(img);
+
+        kps.iter().zip(descs).map(|(k, d)| Feature {
+            keypoint: *k,
+            descriptor: d
+        }).collect()
     }
 }
 
 impl ImagePoint for Feature {
     fn image_point(&self) -> Point2<f64> {
-        self.point
+        self.keypoint.image_point()
     }
 }

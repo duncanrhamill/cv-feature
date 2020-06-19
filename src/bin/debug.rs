@@ -7,7 +7,7 @@
 use image::RgbImage;
 use imageproc::drawing;
 use cv_feature::{
-    fast::{Fast, Variant, KeyPoint},
+    fast::{Fast, Variant, Feature},
     FeatureDetector
 };
 use minifb::{Window, WindowOptions};
@@ -37,11 +37,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let fast = Fast::new(Variant::Fast9, 1.0/255.0*15.0);
 
-    let keypoints = fast.extract(&img).0;
+    let features = fast.extract(&img);
 
-    println!("Found {} keypoints", keypoints.len());
+    println!("Found {} keypoints", features.len());
 
-    draw_keypoints(&mut rgb_img, keypoints);
+    draw_keypoints(&mut rgb_img, features);
 
     while window.is_open() {
 
@@ -68,7 +68,7 @@ fn rgb_to_rgba_u32(rgb: &image::Rgb<u8>) -> u32 {
     255u32 << 24 | (rgb.0[0] as u32) << 16 | (rgb.0[1] as u32) << 8 | rgb.0[2] as u32
 }
 
-fn draw_keypoints(img: &mut RgbImage, keypoints: Vec<KeyPoint>) {
+fn draw_keypoints(img: &mut RgbImage, keypoints: Vec<Feature>) {
     // Color
     let col = image::Rgb::<u8>([0, 255, 0]);
 

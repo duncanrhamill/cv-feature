@@ -40,7 +40,7 @@ pub struct Fast {
 }
 
 #[derive(Copy, Clone)]
-pub struct KeyPoint {
+pub struct Feature {
     pub point: Point2<usize>
 }
 
@@ -124,12 +124,12 @@ impl Fast {
         }
     }
 
-    fn extract_st(&self, img: &DynamicImage) -> (Vec<KeyPoint>, Vec<()>) {
+    fn extract_st(&self, img: &DynamicImage) -> Vec<Feature> {
         // Get the float image
         let float_image = GrayFloatImage::from_dynamic(img);
         
         // Vector of keypoints to return
-        let mut keypoints = Vec::<KeyPoint>::new();
+        let mut keypoints = Vec::<Feature>::new();
 
         // Iterate through pixels in the image, ignoring the outer edges since the ring would go
         // outside the image bounds.
@@ -156,17 +156,16 @@ impl Fast {
         }
 
         // Return the keypoints
-        (keypoints, vec![])
+        keypoints
     }
 }
 
 impl FeatureDetector for Fast {
-    type KeyPoint = KeyPoint;
-    type Descriptor = ();
+    type Feature = Feature;
 
     /// Extract keypoints from the provided image
     #[cfg(not(feature = "parallel"))]
-    fn extract(&self, img: &DynamicImage) -> (Vec<Self::KeyPoint>, Vec<Self::Descriptor>) {
+    fn extract(&self, img: &DynamicImage) -> Vec<Self::Feature> {
         self.extract_st(img)
     }
 
@@ -179,7 +178,7 @@ impl FeatureDetector for Fast {
     /// TODO: this currently runs very slowly, probably because we have a separate job per pixel.
     /// Maybe we should consider splitting the image into segments and processing each in parallel.
     #[cfg(feature = "parallel")]
-    fn extract(&self, img: &DynamicImage) -> (Vec<Self::KeyPoint>, Vec<Self::Descriptor>) {
+    fn extract(&self, img: &DynamicImage) -> Vec<Self::Feature> {
         
         // Branch depending on whether or not we have a threadpool to work with
         match self.thread_pool {
@@ -233,7 +232,7 @@ impl FeatureDetector for Fast {
                     num_kps.load(Ordering::Relaxed)
                 ).collect();
 
-                (keypoints, vec![])
+                keypoints
             },
             // If no threadpool revert to the single threaded version
             None => {
@@ -243,7 +242,7 @@ impl FeatureDetector for Fast {
     }
 }
 
-impl ImagePoint for KeyPoint {
+impl ImagePoint for Feature {
     fn image_point(&self) -> Point2<f64> {
         Point2::from([self.point.x as f64, self.point.y as f64])
     }
@@ -299,7 +298,7 @@ fn segment_test(
     variant: &Variant, 
     disp_vectors: &[Vector2<i32>; 16], 
     threshold: f32
-) -> Option<KeyPoint> {
+) -> Option<Feature> {
     // Get the number of required contiguous pixels based on the variant
     let num_required = match variant {
         Variant::Fast9 => 9,
@@ -380,7 +379,7 @@ fn segment_test(
 
     // If we exited because we hit the condition return a new keypoint
     if num_contig >= num_required {
-        Some(KeyPoint {
+        Some(Feature {
             point
         })
     }

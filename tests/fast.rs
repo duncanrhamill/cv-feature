@@ -29,9 +29,9 @@ fn westminster() -> Result {
 
     let fast = Fast::new(Variant::Fast9, 0.1);
 
-    let keypoints = fast.extract(&img).0;
+    let features = fast.extract(&img);
 
-    assert!(keypoints.len() > 0);
+    assert!(features.len() > 0);
 
     Ok(())
 }
@@ -43,9 +43,9 @@ fn region_at_top() -> Result {
 
     let fast = Fast::new(Variant::Fast9, 0.1);
 
-    let keypoints = fast.extract(&img).0;
+    let features = fast.extract(&img);
 
-    assert!(keypoints.len() == 1);
+    assert!(features.len() == 1);
 
     Ok(())
 }
@@ -70,7 +70,7 @@ fn test_vectors() -> Result {
     // Use approximately the same threshold as in the gen_fast_tv.py file, 51.
     let fast = Fast::new(Variant::Fast9, 1.0/255.0*51.0);
 
-    let keypoints = fast.extract(&img).0;
+    let features = fast.extract(&img);
 
     // Load the test vector CSV
     let mut reader = csv::Reader::from_path(
@@ -89,23 +89,23 @@ fn test_vectors() -> Result {
     }
 
     // Check that the number of matches is similar
-    if rel_diff(test_vector.len() as f64, keypoints.len() as f64) > SIMILAR_THRESHOLD
+    if rel_diff(test_vector.len() as f64, features.len() as f64) > SIMILAR_THRESHOLD
     {
         panic!(
             "Number of matches are dissimilar ({} for test vectors vs {})", 
-            test_vector.len(), keypoints.len()
+            test_vector.len(), features.len()
         );    
     }
 
     // Compute the mean of x and y coordinates
     let (mut accum_x, mut accum_y) = (0.0, 0.0);
 
-    for kp in &keypoints {
+    for kp in &features {
         accum_x += kp.image_point().x;
         accum_y += kp.image_point().y;
     }
-    let mean_x_kp = accum_x / keypoints.len() as f64;
-    let mean_y_kp = accum_y / keypoints.len() as f64;
+    let mean_x_kp = accum_x / features.len() as f64;
+    let mean_y_kp = accum_y / features.len() as f64;
 
     accum_x = 0.0;
     accum_y = 0.0;

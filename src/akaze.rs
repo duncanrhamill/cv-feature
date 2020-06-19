@@ -17,9 +17,13 @@ use cv::{BitArray, ImagePoint};
 // DATA STRUCTURES
 // -----------------------------------------------------------------------------------------------
 
+/// A feature detected by the AKAZE algorithm.
 pub struct Feature {
-    keypoint: KeyPoint,
-    descriptor: BitArray<64>
+    /// The AKAZE keypoint
+    pub keypoint: KeyPoint,
+
+    /// A descriptor for the feature
+    pub descriptor: BitArray<64>
 }
 
 // -----------------------------------------------------------------------------------------------

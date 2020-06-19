@@ -13,12 +13,19 @@ use crate::FeatureDetector;
 // DATA STRUCTURES
 // -----------------------------------------------------------------------------------------------
 
+/// An ORB (Oriented FAST and Rotated BRIEF) feature detector
 pub struct Orb {
 
 }
 
+/// Represents a feature found by the [`Orb`] feature detector
 pub struct Feature {
-    point: Point2<f64>
+
+    /// The location of the feature within the image.
+    pub point: Point2<f64>,
+
+    /// A binary descriptor for the feature
+    pub descriptor: BitArray<256>
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -26,6 +33,7 @@ pub struct Feature {
 // -----------------------------------------------------------------------------------------------
 
 impl Orb {
+    /// Create a new instance of the ORB detector
     pub fn new() -> Self {
         Orb {}
     }

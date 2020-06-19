@@ -23,6 +23,7 @@ use {
 // DATA STRUCTURES
 // -----------------------------------------------------------------------------------------------
 
+/// A FAST feature detector.
 pub struct Fast {
     /// The variant of the FAST algorithm to use
     variant: Variant,
@@ -39,8 +40,11 @@ pub struct Fast {
     thread_pool: Option<ThreadPool>
 }
 
+/// A feature detected by the FAST algorithm
 #[derive(Copy, Clone)]
 pub struct Feature {
+
+    /// The location of the feature within the image.
     pub point: Point2<usize>
 }
 

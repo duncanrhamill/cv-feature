@@ -6,6 +6,8 @@
 //! This crate provides the `FeatureDetector` trait which abstracts away different detectors, 
 //! allowing them to be used interchangably. The trait is also implemented for the `Akaze` detector.
 
+#![warn(missing_docs)]
+
 // -----------------------------------------------------------------------------------------------
 // IMPORTS
 // -----------------------------------------------------------------------------------------------
@@ -26,7 +28,12 @@ mod image;
 // TRAITS
 // -----------------------------------------------------------------------------------------------
 
+/// Trait for types which act as feature detectors.
 pub trait FeatureDetector {
+
+    /// The feature type returned by this detector.
+    ///
+    /// The chosen type should implement the [`cv::ImagePoint`] trait.
     type Feature: ImagePoint;
 
     /// Extract features from an image.

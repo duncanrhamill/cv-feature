@@ -13,7 +13,7 @@ fn bench_westminster(c: &mut Criterion) {
 
     let fast = Fast::new(Variant::Fast9, 0.1);
 
-    c.bench_function("extract", |b| b.iter(|| fast.extract(&img)));
+    c.bench_function("Fast9::extract", |b| b.iter(|| fast.extract(&img)));
 }
 
 fn bench_westminster_imgproc(c: &mut Criterion) {

@@ -128,22 +128,19 @@ impl Fast {
         }
     }
 
-    fn extract_st(&self, img: &DynamicImage) -> Vec<Feature> {
-        // Get the float image
-        let float_image = GrayFloatImage::from_dynamic(img);
-        
+    pub(crate) fn extract_from_grey(&self, img: &GrayFloatImage) -> Vec<Feature> {
         // Vector of keypoints to return
         let mut keypoints = Vec::<Feature>::new();
 
         // Iterate through pixels in the image, ignoring the outer edges since the ring would go
         // outside the image bounds.
-        for y in 3..(float_image.height() - 3) {
-            for x in 3..(float_image.width() - 3) {
+        for y in 3..(img.height() - 3) {
+            for x in 3..(img.width() - 3) {
                 // Get the keypoint based on the correct test for this variant of the algorithm
                 let kp = match self.variant {
                     Variant::Fast12HighSpeed => unimplemented!(),
                     _ => segment_test(
-                        &float_image, 
+                        &img, 
                         Point2::from([x, y]),
                         &self.variant,
                         &self.disp_vectors,
@@ -161,6 +158,13 @@ impl Fast {
 
         // Return the keypoints
         keypoints
+    }
+
+    fn extract_st(&self, img: &DynamicImage) -> Vec<Feature> {
+        // Get the float image
+        let float_image = GrayFloatImage::from_dynamic(img);
+        
+        self.extract_from_grey(&float_image)
     }
 }
 

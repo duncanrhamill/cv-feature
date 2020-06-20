@@ -139,7 +139,7 @@ impl Fast {
                 // Get the keypoint based on the correct test for this variant of the algorithm
                 let kp = match self.variant {
                     Variant::Fast12HighSpeed => unimplemented!(),
-                    _ => segment_test(
+                    _ => segment_test_fast(
                         &img, 
                         Point2::from([x, y]),
                         &self.variant,
@@ -284,7 +284,7 @@ fn get_disp_vector_array() -> [Vector2<i32>; 16] {
 
 /// Perform the segment test on the image at the given point.
 ///
-/// Returns a `KeyPoint` if the pixel is a feature and `None` otherwise.
+/// Returns a `Feature` if the pixel is a feature and `None` otherwise.
 ///
 /// This function performs no checking on `point` being within the valid image region in which
 /// the FAST ring will not overlap the edge of the image. This check must be performed at the
@@ -392,6 +392,133 @@ fn segment_test(
         })
     }
     // Otherwise return None since there's no keypoint here
+    else {
+        None
+    }
+}
+
+/// Perform a faster segment test on the image at the given point.
+///
+/// Returns a `Feature` if the pixel is a feature and `None` otherwise.
+///
+/// This function performs no checking on `point` being within the valid image region in which
+/// the FAST ring will not overlap the edge of the image. This check must be performed at the
+/// higher level.
+///
+/// This function is implemented outside the `Fast` object so that it may be used in parallel 
+/// thread execution without needing to send `self`.
+///
+/// This faster segment test aims to exit the test with `None` at the earliest possible point. This
+/// is done by remembering if there is a region in the first 
+///
+/// # Arguments
+/// - `img` - A reference to the `GrayFloatImage` to operate on
+/// - `point` - The point to test
+/// - `variant` - A reference to the variant of the test to use, FAST-9 or FAST-12
+/// - `disp_vectors` - A reference to the displacement vectors which define the shape of the test
+///    ring
+/// - `threshold` - The threshold to test for.
+fn segment_test_fast(
+    img: &GrayFloatImage, 
+    point: Point2<usize>, 
+    variant: &Variant, 
+    disp_vectors: &[Vector2<i32>; 16], 
+    threshold: f32
+) -> Option<Feature> {
+    // Get the number of required contiguous pixels based on the variant
+    let region_target = match variant {
+        Variant::Fast9 => 9,
+        Variant::Fast12 => 12,
+        _ => panic!("Non-high-speed test used in FAST-X High Speed algorithm")
+    };
+
+    // Counters for the running and first region length
+    let mut running_len = 0;
+    let mut first_len = 0;
+
+    // Conditions for the running and first regions
+    let mut running_cond = Condition::None;
+    let mut first_cond = Condition::None;
+
+    // Index at which to switch to checking against first condition. Starts assuming there's no
+    // first region.
+    let mut pivot_index = 16 - region_target;
+
+    // Indensity of the central pixel
+    let central_intensity = img.get(point.x, point.y);
+
+    // Loop over the ring
+    for i in 0..16 {
+        // Condition for this pixel
+        let mut cond = Condition::None;
+        
+        // Displacement vector for this pixel
+        let disp = disp_vectors[i];
+
+        // Get the intensity of this pixel
+        let intensity = img.get(
+            ((point.x as i32) + disp.x) as usize, 
+            ((point.y as i32) + disp.y) as usize
+        );
+
+        // Set the condition for this pixel (no need to set it if there is no condition)
+        if intensity > central_intensity + threshold {
+            cond = Condition::Brighter;
+        }
+        else if intensity < central_intensity - threshold {
+            cond = Condition::Dimmer;
+        }
+
+        // If the current pixel is a different condition than the running one
+        if cond != running_cond {
+            // If the current index is greater than the pivot, and the condition is different than
+            // the first there is no way we can build a region of the required number of pixels
+            // so this is not a feature.
+            if i > pivot_index && cond != first_cond {
+                return None;
+            }
+
+            // Otherwise update the running condition to the current one and reset the length
+            running_cond = cond;
+            running_len = 0;
+
+            // If the current condition is either dimmer of brighter then increment the running 
+            // length
+            if cond != Condition::None {
+                running_len += 1;
+            }
+        }
+        // If the current pixel is the same condition (but not none) as the running increment the 
+        // running length
+        else if cond != Condition::None {
+            running_len += 1;
+        }
+
+        // If the current index is the same as the running length then we are in the first region
+        // so set the first region data (have to increment i since regions are length-based)
+        if i + 1 == running_len {
+            first_cond = cond;
+            first_len = running_len;
+            
+            // Change the pivot index to account for the increased first region length
+            pivot_index = 16 - region_target + first_len;
+        }
+
+        // If the running region length is equal to the target then return the found feature
+        if running_len >= region_target {
+            return Some(Feature {
+                point
+            })
+        }
+    }
+
+    // At the end of the loop if the sum of the first region and the running region is greater than
+    // the target we have found a region
+    if running_len + first_len >= region_target {
+        Some(Feature {
+            point
+        })
+    }
     else {
         None
     }
